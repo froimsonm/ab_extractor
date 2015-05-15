@@ -83,9 +83,9 @@ void MainWindow::on_pushButtonCreateTar_clicked()
             return;
         }
 
+        // check if file compressed
         if (compressed) {
-            QByteArray compressedData = inputFile.readAll();
-
+            QDataStream inputStream(&inputFile);
             QFile tarFile(outputPath);
             if (!tarFile.open(QIODevice::WriteOnly)) {
                 message("Can not create output file.", QMessageBox::Ok);
@@ -94,12 +94,14 @@ void MainWindow::on_pushButtonCreateTar_clicked()
                 return;
             }
 
-            QByteArray tarData;
-            QCompressor::gzipDecompress(compressedData, tarData);
-            tarFile.write(tarData);
+            QDataStream outputStream(&tarFile);
+            QCompressor::gzipDecompress(inputStream, inputFile.size() - inputFile.pos(), outputStream);
+
             tarFile.close();
 
             message("Data decompressed to " + outputPath, QMessageBox::Ok);
+        } else {
+            message("Not compressed files is not supported yet.", QMessageBox::Ok);
         }
 
         inputFile.close();
