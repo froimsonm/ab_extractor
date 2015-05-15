@@ -14,6 +14,10 @@ If you've changed zlib directory path, you also need to fix this two lines in .p
 
 	INCLUDEPATH += C:/Qt/zlib-1.2.8
 	LIBS += -LC:/Qt/zlib-1.2.8 -lz
+	
+##Todo
+- Background data processing
+- Support for **not** compressed backup files
 
 ##License
 **MIT**
