@@ -5,12 +5,7 @@
 
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
-#include "qcompressor.h"
-
-#define DEBUG true
-#define BACKUP_FILE_V1 1
-#define BACKUP_FILE_V2 2
-#define BACKUP_FILE_V3 3
+#include "workingthread.h"
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -29,85 +24,11 @@ void MainWindow::on_pushButtonCreateTar_clicked()
     QString inputPath = ui->lineEditInputPath->text();
     QString outputPath = ui->lineEditOutputPath->text();
 
-    QFile inputFile(inputPath);
+    WorkingThread* workingThread = new WorkingThread(this, inputPath, outputPath);
+    connect(workingThread, SIGNAL(error(QString)), this, SLOT(on_error(QString)));
+    connect(workingThread, SIGNAL(complete(QString)), this, SLOT(on_error(QString)));
 
-    // check if input file exists
-    if (!inputFile.exists()) {
-        message("Input file not found.", QMessageBox::Ok);
-        return;
-    }
-
-    if (inputFile.open(QIODevice::ReadOnly)) {
-        // read magic line
-        QByteArray magic = inputFile.readLine();
-        // remove \n from line
-        magic.replace("\n", "");
-        // check file format - file should be equals to "ANDROID BACKUP"
-        if (magic != "ANDROID BACKUP") {
-            message("Provided file has wrong format.", QMessageBox::Ok);
-
-            inputFile.close();
-            return;
-        }
-
-        // read version line
-        QByteArray versionStr = inputFile.readLine();
-        QByteArray compressedStr = inputFile.readLine();
-        QByteArray encryptionAlgStr = inputFile.readLine();
-
-        // remove \n
-        versionStr.replace("\n", "");
-        compressedStr.replace("\n", "");
-        encryptionAlgStr.replace("\n", "");
-
-        // check version
-        int version = versionStr.toInt();
-        if (version < BACKUP_FILE_V1 || version > BACKUP_FILE_V3) {
-            message("Don't know how to process version " + version, QMessageBox::Ok);
-
-            inputFile.close();
-            return;
-        }
-
-        // parse compressed value
-        bool compressed = false;
-        if (compressedStr.toInt() == 1) {
-            compressed = true;
-        }
-
-        // check encryption (encrypted files are not supported yet)
-        if (encryptionAlgStr.toInt() == 1) {
-            message("Encrypted files is not supported.", QMessageBox::Ok);
-
-            inputFile.close();
-            return;
-        }
-
-        // check if file compressed
-        if (compressed) {
-            QDataStream inputStream(&inputFile);
-            QFile tarFile(outputPath);
-            if (!tarFile.open(QIODevice::WriteOnly)) {
-                message("Can not create output file.", QMessageBox::Ok);
-
-                inputFile.close();
-                return;
-            }
-
-            QDataStream outputStream(&tarFile);
-            QCompressor::gzipDecompress(inputStream, inputFile.size() - inputFile.pos(), outputStream);
-
-            tarFile.close();
-
-            message("Data decompressed to " + outputPath, QMessageBox::Ok);
-        } else {
-            message("Not compressed files is not supported yet.", QMessageBox::Ok);
-        }
-
-        inputFile.close();
-    } else {
-        qDebug() << "Unable to open input file.";
-    }
+    workingThread->start();
 }
 
 void MainWindow::on_pushButtonChooseInput_clicked()
@@ -118,6 +39,16 @@ void MainWindow::on_pushButtonChooseInput_clicked()
 void MainWindow::on_pushButtonChooseOutput_clicked()
 {
     getPathFromUser(ui->lineEditOutputPath, SAVE);
+}
+
+void MainWindow::on_error(QString error)
+{
+    message(error, QMessageBox::Ok);
+}
+
+void MainWindow::on_complete(QString outputPath)
+{
+    message("Data decompressed to " + outputPath, QMessageBox::Ok);
 }
 
 void MainWindow::message(QString messageText, QMessageBox::StandardButton buttons) {

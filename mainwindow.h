@@ -24,6 +24,9 @@ private slots:
 
     void on_pushButtonChooseOutput_clicked();
 
+    void on_error(QString error);
+    void on_complete(QString outputPath);
+
 private:
     void getPathFromUser(QLineEdit* widget, int dialogPurpose);
     void message(QString messageText, QMessageBox::StandardButton buttons);

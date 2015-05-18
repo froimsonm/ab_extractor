@@ -14,10 +14,12 @@ TEMPLATE = app
 
 SOURCES += main.cpp\
         mainwindow.cpp \
-    qcompressor.cpp
+    qcompressor.cpp \
+    workingthread.cpp
 
 HEADERS  += mainwindow.h \
-    qcompressor.h
+    qcompressor.h \
+    workingthread.h
 
 INCLUDEPATH += C:/Qt/zlib-1.2.8
 LIBS += -LC:/Qt/zlib-1.2.8 -lz
